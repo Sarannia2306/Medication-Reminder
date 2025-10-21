@@ -12,7 +12,7 @@
   <div class="card">
     <h2>Caregiver Tools</h2>
     <p class="helper">This view simulates what a caregiver might see: recent activity and adherence.</p>
-    <div class="row" style="margin-top:8px">
+    <div class="row mt-1">
       <div>
         <label class="label" for="patientSel">Select patient</label>
         <select id="patientSel" class="input">

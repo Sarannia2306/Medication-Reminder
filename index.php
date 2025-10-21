@@ -1,7 +1,7 @@
 <?php include __DIR__.'/includes/header.php'; ?>
-<section class="card">
+<section class="card page-header">
   <div class="row" style="align-items:center; justify-content:space-between">
-    <h2 style="margin:0">Dashboard</h2>
+    <h2 class="no-margin">Dashboard</h2>
     <span id="patientBadge" class="status upcoming" aria-live="polite"></span>
   </div>
 </section>

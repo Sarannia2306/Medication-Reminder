@@ -1,6 +1,8 @@
 <?php include __DIR__.'/includes/header.php'; ?>
-<section class="card">
-  <h2 id="formTitle">Add Medication</h2>
+<section class="card page-header">
+  <div class="row" style="align-items:center; justify-content:space-between">
+    <h2 id="formTitle" class="no-margin">Add Medication</h2>
+  </div>
   <form id="medForm" class="grid" novalidate>
     <div>
       <label class="label" for="name">Medication Name</label>
@@ -35,12 +37,11 @@
         <option>With Meal</option>
       </select>
     </div>
-    <div class="row" style="margin-top:8px">
+    <div class="row mt-1">
       <button id="submitBtn" class="btn btn-primary" type="submit">Add Medication</button>
       <a class="btn btn-ghost" href="medication_list.php">Cancel</a>
     </div>
   </form>
-  <p class="helper">All data is stored locally.</p>
 </section>
 <script>
   document.body.setAttribute('data-page','add');

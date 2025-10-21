@@ -1,7 +1,7 @@
 <?php include __DIR__.'/includes/header.php'; ?>
-<section class="card">
+<section class="card page-header">
   <div class="row" style="align-items:center; justify-content:space-between">
-    <h2 style="margin:0">Patients</h2>
+    <h2 class="no-margin">Patients</h2>
     <a class="btn btn-primary" href="#patientForm">Add Patient</a>
   </div>
 </section>
@@ -31,7 +31,7 @@
       <label class="label" for="pcontact">Contact</label>
       <input id="pcontact" name="pcontact" class="input" placeholder="+44 1234 567890" />
     </div>
-    <div class="row" style="margin-top:8px">
+    <div class="row mt-1">
       <button class="btn btn-primary" type="submit">Save Patient</button>
     </div>
     <p class="helper">Selecting "View Medications" sets the active patient and opens their schedule.</p>

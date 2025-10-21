@@ -20,6 +20,30 @@
   const parseTime = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); const d = new Date(); d.setHours(h, m, 0, 0); return d; };
   const uuid = () => crypto?.randomUUID?.() || 'id-' + Math.random().toString(36).slice(2);
 
+  function setFieldError(input, message){
+    if(!input) return;
+    clearFieldError(input);
+    input.classList.add('invalid');
+    const err = document.createElement('div');
+    err.className = 'field-error';
+    err.textContent = message;
+    input.insertAdjacentElement('afterend', err);
+  }
+  function clearFieldError(input){
+    if(!input) return;
+    input.classList.remove('invalid');
+    const next = input.nextElementSibling;
+    if(next && next.classList.contains('field-error')) next.remove();
+  }
+  function clearFormErrors(form){
+    if(!form) return;
+    Array.from(form.querySelectorAll('.invalid')).forEach(el=> el.classList.remove('invalid'));
+    Array.from(form.querySelectorAll('.field-error')).forEach(el=> el.remove());
+  }
+  function validateEmailFormat(email){
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
   // --- State ---
   let prefs = load(PREF_KEY, { theme: 'light', fontScale: 1, activePatient: 'patientA', activePatientId: null });
   function getStoreKey(){
@@ -92,7 +116,7 @@
           const el = document.createElement('div');
           el.className = 'item';
           el.innerHTML = `<div class="item-left">
-              <div class="item-icon">🧍</div>
+              <div class="item-icon"><i class="bi bi-person"></i></div>
               <div>
                 <div class="item-title">${escapeHtml(p.name)}</div>
                 <div class="item-meta">${escapeHtml(p.age||'')}${p.condition? ' • '+escapeHtml(p.condition):''}${p.contact? ' • '+escapeHtml(p.contact):''}</div>
@@ -136,9 +160,10 @@
     if(form){
       form.onsubmit = (e) => {
         e.preventDefault();
+        clearFormErrors(form);
         const id = form.pid.value || uuid();
         const data = { id, name: form.pname.value.trim(), age: form.page.value.trim(), condition: form.pcond.value.trim(), contact: form.pcontact.value.trim() };
-        if(!data.name){ toast('Name is required'); return; }
+        if(!data.name){ setFieldError(form.pname, 'Name is required'); return; }
         const arr = getPatients();
         const i = arr.findIndex(x=>x.id===id);
         if(i>=0) arr[i]=data; else arr.push(data);
@@ -172,7 +197,7 @@
       const el = document.createElement('div');
       el.className = 'item';
       el.innerHTML = `<div class=\"item-left\">
-          <div class=\"item-icon\">💊</div>
+          <div class=\"item-icon\"><i class=\"bi bi-capsule\"></i></div>
           <div>
             <div class=\"item-title\">${escapeHtml(m.name)}</div>
             <div class=\"item-meta\">${escapeHtml(m.dosage)} • ${m.frequency}${m.meal? ' • '+escapeHtml(m.meal):''} • ${(m.times||[]).join(' • ')}</div>
@@ -202,9 +227,18 @@
     if(!form) return;
     form.onsubmit = (e) => {
       e.preventDefault();
+      clearFormErrors(form);
       const email = form.email.value.trim();
       const pass = form.password.value;
-      if(!email || !pass){ toast('Enter email and password'); return; }
+      let hasErr = false;
+      if(!email){ setFieldError(form.email, 'Email is required'); hasErr = true; }
+      else if(!validateEmailFormat(email)){ setFieldError(form.email, 'Enter a valid email'); hasErr = true; }
+      if(!pass){ setFieldError(form.password, 'Password is required'); hasErr = true; }
+      if(hasErr) return;
+      const HARD_EMAIL = 'sarannia123@gmail.com';
+      const HARD_PASS = 'Sarannia123';
+      if(email !== HARD_EMAIL){ setFieldError(form.email, 'Email not recognized'); return; }
+      if(pass !== HARD_PASS){ setFieldError(form.password, 'Incorrect password'); return; }
       setSession({ loggedIn:true, caregiverId:'local-caregiver' });
       toast('Logged in');
       setTimeout(()=> location.href='index.php', 300);
@@ -215,15 +249,21 @@
     if(!form) return;
     form.onsubmit = (e) => {
       e.preventDefault();
-      const profile = {
-        name: form.r_name.value.trim(),
-        email: form.r_email.value.trim(),
-        phone: form.r_phone.value.trim(),
-        org: form.r_org.value.trim(),
-        experience: form.r_exp.value.trim(),
-        updatedAt: new Date().toISOString()
-      };
-      if(!profile.name || !profile.email){ toast('Name and email are required'); return; }
+      clearFormErrors(form);
+      const name = form.r_name.value.trim();
+      const email = form.r_email.value.trim();
+      const phone = form.r_phone.value.trim();
+      const org = form.r_org.value.trim();
+      const pass = form.r_password?.value || '';
+      const experience = form.r_exp.value.trim();
+      let hasErr = false;
+      if(!name){ setFieldError(form.r_name, 'Name is required'); hasErr = true; }
+      if(!email){ setFieldError(form.r_email, 'Email is required'); hasErr = true; }
+      else if(!validateEmailFormat(email)){ setFieldError(form.r_email, 'Enter a valid email'); hasErr = true; }
+      if(pass && pass.length>0 && pass.length<8){ setFieldError(form.r_password, 'Password must be at least 8 characters'); hasErr = true; }
+      if(experience && (+experience < 0)){ setFieldError(form.r_exp, 'Experience cannot be negative'); hasErr = true; }
+      if(hasErr) return;
+      const profile = { name, email, phone, org, experience, updatedAt: new Date().toISOString() };
       save(CAREGIVER_PROFILE, profile);
       setSession({ loggedIn:true, caregiverId: 'local-caregiver' });
       toast('Account created');
@@ -296,7 +336,7 @@
         name: 'Sarannia Veeramuthu',
         email: 'sarannia123@gmail.com',
         phone: '+60-1151444588',
-        org: 'MediTrack Clinic',
+        org: 'Wellness Medical Clinic',
         experience: '5',
         updatedAt: new Date().toISOString()
       });
@@ -463,6 +503,48 @@
     const m = document.getElementById('cgMissed'); if(m) m.textContent = s.missed;
     const tot = document.getElementById('cgTotal'); if(tot) tot.textContent = s.total;
     const r = document.getElementById('cgRate'); if(r) r.textContent = s.rate + '%';
+
+    // Render Recent Activity feed for today
+    const feed = document.getElementById('caregiverFeed');
+    if(feed){
+      const now = TODAY();
+      const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+      const events = [];
+      meds.forEach(med => {
+        (med.history||[]).forEach(h => {
+          if(h.date === todayStr && (h.status === 'taken' || h.status === 'missed')){
+            events.push({
+              time: h.time,
+              status: h.status,
+              medName: med.name,
+              dosage: med.dosage
+            });
+          }
+        });
+      });
+      // Sort by time descending (latest first)
+      events.sort((a,b) => parseTime(b.time) - parseTime(a.time));
+      feed.innerHTML = '';
+      if(events.length === 0){
+        feed.innerHTML = '<div class="helper">No activity yet for today.</div>';
+      } else {
+        events.forEach(ev => {
+          const sClass = ev.status === 'taken' ? 'taken' : 'missed';
+          const icon = ev.status === 'taken' ? '<i class="bi bi-check-circle"></i>' : '<i class="bi bi-x-circle"></i>';
+          const el = document.createElement('div');
+          el.className = 'item';
+          el.innerHTML = `<div class="item-left">
+              <div class="item-icon">${icon}</div>
+              <div>
+                <div class="item-title">${escapeHtml(ev.medName)} · ${escapeHtml(ev.dosage)}</div>
+                <div class="item-meta">${ev.time}</div>
+                <span class="status ${sClass}">${statusLabel(sClass)}</span>
+              </div>
+            </div>`;
+          feed.appendChild(el);
+        });
+      }
+    }
   }
 
   // --- Page routers ---
@@ -507,7 +589,7 @@
     $('#kpiRate').textContent = rate + '%';
 
     if(next){
-      nextBox.innerHTML = `<div class="item-left"><div class="item-icon">⏰</div>
+      nextBox.innerHTML = `<div class="item-left"><div class="item-icon"><i class="bi bi-alarm"></i></div>
         <div><div class="item-title">${escapeHtml(next.name)} · ${escapeHtml(next.dosage)}</div>
         <div class="item-meta">Next at ${next.time} (${next.inMin>=0? next.inMin+' min':'now'})</div></div></div>
         <div class="item-actions">
@@ -529,7 +611,7 @@
         const el = document.createElement('div');
         el.className = 'item';
         el.innerHTML = `<div class="item-left">
-            <div class="item-icon">💊</div>
+            <div class="item-icon"><i class="bi bi-capsule"></i></div>
             <div>
               <div class="item-title">${escapeHtml(m.name)}</div>
               <div class="item-meta">${escapeHtml(m.dosage)} • ${m.time} • in ${m.inMin} min</div>
@@ -568,7 +650,7 @@
       const el = document.createElement('div');
       el.className = 'item';
       el.innerHTML = `<div class="item-left">
-          <div class="item-icon">💊</div>
+          <div class="item-icon"><i class="bi bi-capsule"></i></div>
           <div>
             <div class="item-title">${escapeHtml(m.name)}</div>
             <div class="item-meta">${escapeHtml(m.dosage)} • ${m.frequency}${m.meal? ' • '+escapeHtml(m.meal):''} • ${(m.times||[]).join(' • ')}</div>
@@ -660,12 +742,18 @@
     }
     form.addEventListener('submit', (e) => {
       e.preventDefault();
+      clearFormErrors(form);
       const name = form.name.value.trim();
       const dosage = form.dosage.value.trim();
       const time = form.time.value;
       const frequency = form.frequency.value;
       const meal = form.meal ? form.meal.value : undefined;
-      if(!name || !dosage || !time){ toast('Please fill in all required fields'); return; }
+      let hasErr = false;
+      if(!name){ setFieldError(form.name, 'Medication name is required'); hasErr = true; }
+      if(!dosage){ setFieldError(form.dosage, 'Dosage is required'); hasErr = true; }
+      if(!time){ setFieldError(form.time, 'Time is required'); hasErr = true; }
+      else if(!/^\d{2}:\d{2}$/.test(time)){ setFieldError(form.time, 'Use HH:MM format'); hasErr = true; }
+      if(hasErr) return;
       const times = computeTimes(time, frequency);
       if(editId){ updateMedication(editId, { name, dosage, times, frequency, meal }); toast('Medication updated'); }
       else { addMedication({ name, dosage, times, frequency, meal }); toast('Medication added'); }

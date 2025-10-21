@@ -1,7 +1,7 @@
 <?php include __DIR__.'/includes/header.php'; ?>
-<section class="card">
+<section class="card page-header">
   <div class="row" style="align-items:center; justify-content:space-between">
-    <h2 id="pmHeader" style="margin:0">Patient Medications</h2>
+    <h2 id="pmHeader" class="no-margin">Patient Medications</h2>
     <div class="row" style="flex:0 0 auto">
       <a id="pmAdd" class="btn btn-primary" href="#">Add Medication</a>
     </div>

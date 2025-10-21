@@ -1,6 +1,8 @@
 <?php include __DIR__.'/includes/header.php'; ?>
-<section class="card">
-  <h2>Help</h2>
+<section class="card page-header">
+  <div class="row">
+    <h2 class="no-margin">Help</h2>
+  </div>
   <div class="grid cols-2">
     <div>
       <h3>Getting Started</h3>

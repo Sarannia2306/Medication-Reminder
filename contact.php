@@ -1,6 +1,8 @@
 <?php include __DIR__.'/includes/header.php'; ?>
-<section class="card">
-  <h2>Contact Us</h2>
+<section class="card page-header">
+  <div class="row">
+    <h2 class="no-margin">Contact Us</h2>
+  </div>
   <p class="helper">We'd love to hear from you. Fill in the form and we'll get back to you.</p>
   <form id="contactForm" class="grid" novalidate>
     <div>
@@ -11,7 +13,7 @@
       <label class="label" for="c_email">Email</label>
       <input id="c_email" name="c_email" type="email" class="input" placeholder="you@example.com" required />
     </div>
-    <div style="grid-column:1 / -1">
+    <div class="grid-full">
       <label class="label" for="c_msg">Message</label>
       <textarea id="c_msg" name="c_msg" class="input" rows="5" placeholder="How can we help?" required></textarea>
     </div>

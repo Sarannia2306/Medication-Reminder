@@ -1,6 +1,8 @@
 <?php include __DIR__.'/includes/header.php'; ?>
-<section class="card">
-  <h2>Register</h2>
+<section class="card page-header">
+  <div class="row">
+    <h2 class="no-margin">Register</h2>
+  </div>
   <form id="registerForm" class="grid" novalidate>
     <div>
       <label class="label" for="r_name">Full Name</label>
@@ -30,7 +32,7 @@
         <input id="r_exp" name="experience" type="number" min="0" class="input" placeholder="0" />
       </div>
     </div>
-    <div class="row" style="margin-top:8px">
+    <div class="row mt-1">
       <button class="btn btn-primary" type="submit">Create Account</button>
       <a class="btn btn-ghost" href="login.php">Back to Login</a>
     </div>
@@ -40,4 +42,3 @@
 <script>
   document.body.setAttribute('data-page','register');
 </script>
-<?php include __DIR__.'/includes/footer.php'; ?>

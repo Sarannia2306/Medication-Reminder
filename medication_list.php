@@ -1,7 +1,7 @@
 <?php include __DIR__.'/includes/header.php'; ?>
-<section class="card">
+<section class="card page-header">
   <div class="row" style="justify-content:space-between; align-items:center">
-    <h2 style="margin:0">Medication List</h2>
+    <h2 class="no-margin">Medication List</h2>
     <a class="btn btn-primary" href="add_medication.php">Add</a>
   </div>
   <hr class="sep" />

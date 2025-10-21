@@ -1,12 +1,14 @@
 <?php include __DIR__.'/includes/header.php'; ?>
-<section class="card">
-  <h2>Accessibility & Preferences</h2>
+<section class="card page-header">
+  <div class="row">
+    <h2 class="no-margin">Accessibility & Preferences</h2>
+  </div>
   <div class="grid cols-2">
     <div>
       <label class="label">Theme Mode</label>
       <div class="segmented">
-        <button id="themeLight" class="btn btn-secondary" type="button">🌞 Light</button>
-        <button id="themeDark" class="btn btn-secondary" type="button">🌙 Dark</button>
+        <button id="themeLight" class="btn btn-secondary" type="button"><i class="bi bi-brightness-high"></i> Light</button>
+        <button id="themeDark" class="btn btn-secondary" type="button"><i class="bi bi-moon"></i> Dark</button>
       </div>
     </div>
     <div>
@@ -21,7 +23,7 @@
   <div class="grid cols-2">
     <div>
       <label class="label" for="contrastToggle">Contrast Mode</label>
-      <div class="row" style="flex-wrap:wrap; align-items:center; gap:10px">
+      <div class="flex-wrap-center">
         <input id="contrastToggle" type="checkbox" />
         <span class="helper">High contrast for better readability</span>
       </div>
@@ -44,7 +46,11 @@
       </select>
     </div>
   </div>
-  <p class="helper">Preferences are simulated for UX and saved locally.</p>
+  <p class="helper">Preferences are simulated and saved locally.
+    <br>
+    <br>
+    <br>
+  </p>
 </section>
 <script>
   document.body.setAttribute('data-page','settings');

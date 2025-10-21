@@ -5,13 +5,13 @@
   <footer class="app-footer">
     <div class="footer-grid container">
       <div class="footer-brand">
-        <div class="brand"><span class="brand-icon" aria-hidden="true">💊</span><span class="brand-text">MediTrack</span></div>
+        <div class="brand"><span class="brand-icon" aria-hidden="true"><i class="bi bi-capsule"></i></span><span class="brand-text">MediTrack</span></div>
         <p class="helper">Care made simple.</p>
       </div>
       <div class="footer-social">
-        <a href="contact.php" class="social" aria-label="Email">✉️</a>
-        <a href="help.php" class="social" aria-label="Help">❓</a>
-        <a href="about.php" class="social" aria-label="Info">ℹ️</a>
+        <a href="contact.php" class="social" aria-label="Email"><i class="bi bi-envelope"></i></a>
+        <a href="help.php" class="social" aria-label="Help"><i class="bi bi-question-circle"></i></a>
+        <a href="about.php" class="social" aria-label="Info"><i class="bi bi-info-circle"></i></a>
       </div>
     </div>
     <div class="footer-bottom">

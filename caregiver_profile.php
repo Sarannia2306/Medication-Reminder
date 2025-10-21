@@ -1,7 +1,7 @@
 <?php include __DIR__.'/includes/header.php'; ?>
-<section class="card">
+<section class="card page-header">
   <div class="row" style="align-items:center; justify-content:space-between">
-    <h2 style="margin:0">Caregiver Profile</h2>
+    <h2 class="no-margin">Caregiver Profile</h2>
     <button id="logoutBtnProfile" class="btn btn-danger" type="button">Logout</button>
   </div>
   <form id="profileForm" class="grid" novalidate>
@@ -29,7 +29,7 @@
         <input id="p_exp" name="p_exp" type="number" min="0" class="input" />
       </div>
     </div>
-    <div class="row" style="margin-top:8px">
+    <div class="row mt-1">
       <button class="btn btn-primary" type="submit">Save Changes</button>
       <button id="resetApp" class="btn btn-danger" type="button">Reset App</button>
     </div>
