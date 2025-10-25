@@ -599,14 +599,43 @@
   fontDown?.addEventListener('click', () => { prefs.fontScale = Math.max(0.4, (prefs.fontScale || 1) - 0.1); applyPrefs(); persistPrefs(); });
 
   // --- Toast ---
-  const toastEl = $('#toast');
-  let toastTimer;
-  function toast(msg){
-    if(!toastEl) return;
+  function toast(msg, type = 'info') {
+    // Create toast element if it doesn't exist
+    let toastEl = document.querySelector('.toast');
+    
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.className = 'toast';
+      document.body.appendChild(toastEl);
+    }
+    
+    // Set toast content and type
     toastEl.textContent = msg;
+    
+    // Remove any existing type classes
+    toastEl.classList.remove('toast-success', 'toast-error', 'toast-warning', 'toast-info');
+    
+    // Add the appropriate type class
+    if (type) {
+      toastEl.classList.add(`toast-${type}`);
+    }
+    
+    // Show the toast
     toastEl.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2000);
+    
+    // Auto-hide after delay
+    clearTimeout(window.toastTimer);
+    window.toastTimer = setTimeout(() => {
+      toastEl.classList.remove('show');
+      // Remove the toast after animation completes
+      setTimeout(() => {
+        if (toastEl && !toastEl.classList.contains('show')) {
+          toastEl.remove();
+        }
+      }, 300);
+    }, 3000);
+    
+    return toastEl;
   }
 
   // --- Modal ---
