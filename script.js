@@ -803,7 +803,54 @@
   }
 
   // --- Render: Home ---
-  function renderHome(){
+  function getTodaysMedications() {
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const now = new Date();
+  const currentTime = now.getHours() * 60 + now.getMinutes(); // Current time in minutes
+  
+  // Get all medications with their scheduled times for today
+  const todaysMeds = [];
+  
+  meds.forEach(med => {
+    (med.times || []).forEach(timeStr => {
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      const medTimeInMinutes = hours * 60 + minutes;
+      
+      // Create a medication entry for each scheduled time
+      const medEntry = {
+        id: med.id,
+        name: med.name,
+        dosage: med.dosage,
+        time: timeStr,
+        timeInMinutes: medTimeInMinutes,
+        status: 'pending' // default status
+      };
+      
+      // Check if there's a history entry for today
+      if (med.history) {
+        const todayHistory = med.history.find(h => 
+          h.date === today && h.time === timeStr
+        );
+        
+        if (todayHistory) {
+          medEntry.status = todayHistory.status; // 'taken' or 'missed'
+        } else if (medTimeInMinutes < currentTime - 30) { // If time has passed and not marked
+          medEntry.status = 'missed';
+        }
+      } else if (medTimeInMinutes < currentTime - 30) { // No history at all
+        medEntry.status = 'missed';
+      }
+      
+      todaysMeds.push(medEntry);
+    });
+  });
+  
+  // Sort by time
+  return todaysMeds.sort((a, b) => a.timeInMinutes - b.timeInMinutes);
+}
+
+function renderHome(){
+    // Render patient badge
     const badge = document.getElementById('patientBadge');
     if(badge){
       let label = null;
@@ -819,11 +866,51 @@
     const next = nextDose();
     const nextBox = $('#nextDoseBox');
     const reminderList = $('#reminders');
+    const todayScheduleList = $('#todaySchedule');
+    
+    // Update KPIs
     const { taken, missed, total, rate } = adherenceSummary();
     $('#kpiTaken').textContent = taken;
     $('#kpiMissed').textContent = missed;
     $('#kpiTotal').textContent = total;
     $('#kpiRate').textContent = rate + '%';
+    
+    // Render today's medication schedule
+    const todaysMeds = getTodaysMedications();
+    todayScheduleList.innerHTML = '';
+    
+    if (todaysMeds.length === 0) {
+      todayScheduleList.innerHTML = '<div class="helper">No medications scheduled for today.</div>';
+    } else {
+      todaysMeds.forEach(med => {
+        const medEl = document.createElement('div');
+        medEl.className = `item ${med.status}`;
+        medEl.innerHTML = `
+          <div class="item-left">
+            <div class="item-icon">
+              <i class="bi ${med.status === 'taken' ? 'bi-check-circle-fill' : med.status === 'missed' ? 'bi-x-circle-fill' : 'bi-clock'}"></i>
+            </div>
+            <div>
+              <div class="item-title">${escapeHtml(med.name)} <span class="dosage">${escapeHtml(med.dosage)}</span></div>
+              <div class="item-meta">Scheduled for ${med.time}</div>
+              <span class="status ${med.status}">${med.status.charAt(0).toUpperCase() + med.status.slice(1)}</span>
+            </div>
+          </div>
+          <div class="item-actions">
+            <button class="btn btn-primary" data-action="taken" data-id="${med.id}" data-time="${med.time}" ${med.status === 'taken' ? 'disabled' : ''}>
+              <i class="bi bi-check-lg"></i> Taken
+            </button>
+            <button class="btn btn-danger" data-action="missed" data-id="${med.id}" data-time="${med.time}" ${med.status === 'missed' || med.status === 'taken' ? 'disabled' : ''}>
+              <i class="bi bi-x-lg"></i> Missed
+            </button>
+          </div>
+        `;
+        todayScheduleList.appendChild(medEl);
+      });
+    }
+    
+    // Add event listeners for the new buttons
+    todayScheduleList.addEventListener('click', onItemAction);
 
     if(next){
       nextBox.innerHTML = `<div class="item-left"><div class="item-icon"><i class="bi bi-alarm"></i></div>

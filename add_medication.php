@@ -2,6 +2,10 @@
 <section class="card page-header">
   <div class="row" style="align-items:center; justify-content:space-between">
     <h2 id="formTitle" class="no-margin">Add Medication</h2>
+    <div id="patientInfo" class="patient-info">
+      <i class="bi bi-person-fill"></i>
+      <span id="patientName">Loading patient...</span>
+    </div>
   </div>
   <form id="medForm" class="grid" novalidate>
     <input type="hidden" id="medId" name="id" value="">
@@ -47,6 +51,27 @@
 <script>
   document.body.setAttribute('data-page','add');
   
+  // Display current patient information
+  function updatePatientInfo() {
+    const pts = JSON.parse(localStorage.getItem('meditrack:patients') || '[]');
+    const prefs = JSON.parse(localStorage.getItem('meditrack:prefs') || '{}');
+    let patientName = 'Unknown Patient';
+    
+    if (prefs.activePatientId) {
+      const patient = pts.find(p => p.id === prefs.activePatientId);
+      if (patient) {
+        patientName = patient.name;
+      }
+    } else {
+      patientName = prefs.activePatient === 'patientB' ? 'Patient B' : 'Patient A';
+    }
+    
+    document.getElementById('patientName').textContent = patientName;
+  }
+  
+  // Update patient info on page load
+  updatePatientInfo();
+  
   // Check if we're editing an existing medication
   document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -69,7 +94,19 @@
         
         // Set time (take the first time if multiple exist)
         if (medToEdit.times && medToEdit.times.length > 0) {
-          document.getElementById('time').value = medToEdit.times[0] || '';
+          // Convert stored time to 24-hour format if needed
+          let storedTime = medToEdit.times[0] || '';
+          // Ensure proper time format (HH:MM)
+          if (storedTime && storedTime.includes(' ')) {
+            // Handle AM/PM format if present
+            const [timePart, period] = storedTime.split(' ');
+            let [hours, minutes] = timePart.split(':');
+            hours = parseInt(hours, 10);
+            if (period === 'PM' && hours < 12) hours += 12;
+            if (period === 'AM' && hours === 12) hours = 0;
+            storedTime = `${String(hours).padStart(2, '0')}:${minutes}`;
+          }
+          document.getElementById('time').value = storedTime;
         }
         
         // Set frequency and meal timing
@@ -103,40 +140,53 @@
         // Calculate times based on frequency
         const baseTime = formData.time;
         if (baseTime) {
+          // Ensure baseTime is in HH:MM format
+          let [hours, minutes] = baseTime.split(':');
+          hours = parseInt(hours, 10);
+          minutes = parseInt(minutes, 10);
+          
+          // Create a date object for today with the specified time
+          const now = new Date();
+          const baseDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0, 0);
+          
           switch(formData.frequency) {
             case 'Twice Daily':
-              const [hours, minutes] = baseTime.split(':');
-              const firstDose = new Date();
-              firstDose.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-              
-              const secondDose = new Date(firstDose);
-              secondDose.setHours(secondDose.getHours() + 12);
+              const secondDose = new Date(baseDate);
+              secondDose.setHours(baseDate.getHours() + 12);
               
               formData.times = [
-                `${String(firstDose.getHours()).padStart(2, '0')}:${String(firstDose.getMinutes()).padStart(2, '0')}`,
+                `${String(baseDate.getHours()).padStart(2, '0')}:${String(baseDate.getMinutes()).padStart(2, '0')}`,
                 `${String(secondDose.getHours()).padStart(2, '0')}:${String(secondDose.getMinutes()).padStart(2, '0')}`
               ];
               break;
               
             case 'Thrice Daily':
-              const [h, m] = baseTime.split(':');
-              const first = new Date();
-              first.setHours(parseInt(h), parseInt(m), 0, 0);
-              
-              const second = new Date(first);
-              second.setHours(second.getHours() + 8);
+              const second = new Date(baseDate);
+              second.setHours(baseDate.getHours() + 8);
               
               const third = new Date(second);
-              third.setHours(third.getHours() + 8);
+              third.setHours(second.getHours() + 8);
               
               formData.times = [
-                `${String(first.getHours()).padStart(2, '0')}:${String(first.getMinutes()).padStart(2, '0')}`,
+                `${String(baseDate.getHours()).padStart(2, '0')}:${String(baseDate.getMinutes()).padStart(2, '0')}`,
                 `${String(second.getHours()).padStart(2, '0')}:${String(second.getMinutes()).padStart(2, '0')}`,
                 `${String(third.getHours()).padStart(2, '0')}:${String(third.getMinutes()).padStart(2, '0')}`
               ];
               break;
               
-            default:
+            case 'Every Morning':
+              formData.times = ['08:00'];
+              break;
+              
+            case 'Every Afternoon':
+              formData.times = ['13:00'];
+              break;
+              
+            case 'Every Night':
+              formData.times = ['20:00'];
+              break;
+              
+            default: // Once Daily or any other case
               formData.times = [baseTime];
           }
         }

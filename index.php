@@ -26,6 +26,13 @@
 </section>
 
 <section class="card">
+  <h2>Today's Medication Schedule</h2>
+  <div id="todaySchedule" class="list">
+    <!-- Today's medication schedule will be loaded here -->
+  </div>
+</section>
+
+<section class="card">
   <h2>Today at a Glance</h2>
   <div class="kpis">
     <div class="kpi"><div class="value" id="kpiTaken">0</div><div class="label">Taken</div></div>
