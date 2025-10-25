@@ -37,7 +37,7 @@
       <a class="btn btn-ghost" href="login.php">Back to Login</a>
     </div>
   </form>
-  <p class="helper">Data is stored locally in your browser for this prototype.</p>
+  <p class="helper">Data is stored locally in the browser for this registration.</p>
 </section>
 <script>
   document.body.setAttribute('data-page','register');

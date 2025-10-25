@@ -17,9 +17,8 @@
       <a class="btn btn-ghost" href="register.php">Register</a>
     </div>
   </form>
-  <p class="helper">Enter your register email and password to login.</p>
+  <p class="helper">Enter your registered email and password to login.</p>
 </section>
 <script>
   document.body.setAttribute('data-page','login');
 </script>
-<!-- <?php include __DIR__.'/includes/footer.php'; ?> -->
