@@ -45,7 +45,25 @@
   }
 
   // --- State ---
-  let prefs = load(PREF_KEY, { theme: 'light', fontScale: 1, activePatient: 'patientA', activePatientId: null });
+  let prefs = load(PREF_KEY, { 
+    theme: 'light', 
+    fontScale: 1, 
+    activePatient: 'patientA', 
+    activePatientId: null,
+    notifications: {
+      enabled: true,
+      sound: true,
+      reminderBefore: 15, // minutes before to remind
+      morningTime: '08:00',
+      afternoonTime: '13:00',
+      eveningTime: '20:00',
+      snoozeDuration: 5 // minutes
+    }
+  });
+  
+  // Track active notifications
+  let activeNotifications = [];
+  let reminderTimeouts = [];
   function getStoreKey(){
     // Prefer new model using activePatientId, fallback to old A/B for backward compatibility
     const pid = prefs?.activePatientId;
@@ -54,6 +72,164 @@
     return `${BASE_STORE_KEY}_${legacy}`;
   }
 
+  // --- Notification Functions ---
+  function requestNotificationPermission() {
+    if (!('Notification' in window)) {
+      console.log('This browser does not support desktop notifications');
+      return Promise.resolve(false);
+    }
+    
+    if (Notification.permission === 'granted') {
+      return Promise.resolve(true);
+    }
+    
+    if (Notification.permission !== 'denied') {
+      return Notification.requestPermission().then(permission => {
+        return permission === 'granted';
+      });
+    }
+    
+    return Promise.resolve(false);
+  }
+  
+  function scheduleMedicationReminders() {
+    // Clear any existing reminders
+    clearAllReminders();
+    
+    if (!prefs.notifications.enabled) return;
+    
+    const now = new Date();
+    const meds = load(getStoreKey(), []);
+    
+    meds.forEach(med => {
+      if (!med.times || med.times.length === 0) return;
+      
+      med.times.forEach(timeStr => {
+        if (!timeStr) return;
+        
+        // Parse the time (format: "HH:MM")
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        
+        // Create a date for today with the medication time
+        const medTime = new Date();
+        medTime.setHours(hours, minutes, 0, 0);
+        
+        // If the time has already passed today, schedule for tomorrow
+        if (medTime <= now) {
+          medTime.setDate(medTime.getDate() + 1);
+        }
+        
+        // Calculate reminder time (medication time minus reminderBefore minutes)
+        const reminderTime = new Date(medTime);
+        reminderTime.setMinutes(reminderTime.getMinutes() - (prefs.notifications.reminderBefore || 15));
+        
+        // Calculate time until reminder
+        const timeUntilReminder = reminderTime - now;
+        
+        // Only schedule if it's in the future
+        if (timeUntilReminder > 0) {
+          const timeoutId = setTimeout(() => {
+            showMedicationReminder(med, medTime);
+          }, timeUntilReminder);
+          
+          reminderTimeouts.push(timeoutId);
+          
+          // Schedule the next reminder for the next day
+          const nextDayTimeoutId = setTimeout(() => {
+            scheduleMedicationReminders();
+          }, timeUntilReminder + (24 * 60 * 60 * 1000));
+          
+          reminderTimeouts.push(nextDayTimeoutId);
+        }
+      });
+    });
+  }
+  
+  function showMedicationReminder(med, medTime) {
+    if (!prefs.notifications.enabled) return;
+    
+    requestNotificationPermission().then(hasPermission => {
+      if (!hasPermission) return;
+      
+      const options = {
+        body: `Time to take ${med.name} (${med.dosage})`,
+        icon: '/path/to/icon.png',
+        tag: `med-reminder-${med.id}-${medTime.getTime()}`,
+        requireInteraction: true,
+        actions: [
+          { action: 'snooze', title: 'Snooze 5 min' },
+          { action: 'taken', title: 'Mark as Taken' }
+        ]
+      };
+      
+      const notification = new Notification(`💊 ${med.name} Reminder`, options);
+      
+      notification.onclick = (event) => {
+        // Handle notification click
+        window.focus();
+        notification.close();
+      };
+      
+      notification.onaction = (event) => {
+        if (event.action === 'taken') {
+          // Mark as taken in the app
+          markStatus(med.id, 'taken', medTime);
+        } else if (event.action === 'snooze') {
+          // Snooze for 5 minutes
+          setTimeout(() => {
+            showMedicationReminder(med, new Date(medTime.getTime() + (5 * 60 * 1000)));
+          }, prefs.notifications.snoozeDuration * 60 * 1000);
+        }
+      };
+      
+      // Auto-close after 5 minutes if not interacted with
+      setTimeout(() => {
+        notification.close();
+      }, 5 * 60 * 1000);
+      
+      // Play sound if enabled
+      if (prefs.notifications.sound) {
+        const audio = new Audio('/path/to/notification-sound.mp3');
+        audio.play().catch(e => console.log('Could not play sound:', e));
+      }
+      
+      // Track active notification
+      activeNotifications.push({
+        id: `med-reminder-${med.id}-${medTime.getTime()}`,
+        notification,
+        timeoutId: setTimeout(() => {
+          // Auto-mark as missed after 1 hour if not taken
+          markStatus(med.id, 'missed', medTime);
+        }, 60 * 60 * 1000) // 1 hour
+      });
+    });
+  }
+  
+  function clearAllReminders() {
+    // Clear all pending timeouts
+  reminderTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+  reminderTimeouts = [];
+  
+  // Close all active notifications
+  activeNotifications.forEach(({ notification, timeoutId }) => {
+    if (notification) notification.close();
+    if (timeoutId) clearTimeout(timeoutId);
+  });
+  
+  activeNotifications = [];
+  
+  // Clear any existing service worker notifications
+  if ('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
+    navigator.serviceWorker.getRegistration().then(registration => {
+      if (registration) {
+        registration.getNotifications().then(notifications => {
+          notifications.forEach(notification => notification.close());
+        });
+      }
+    });
+  }
+  }
+  
   // --- Settings Page ---
   function initSettings(){
     // Theme segmented
@@ -94,10 +270,71 @@
 
     // Notification prefs
     const notifEnable = document.getElementById('notifEnable');
-    const notifLead = document.getElementById('notifLead');
-    const notif = prefs.notifications || { enabled:false, lead:'on_time' };
-    if(notifEnable) notifEnable.checked = !!notif.enabled;
-    if(notifLead) notifLead.value = notif.lead || 'on_time';
+    const notifSound = document.getElementById('notifSound');
+    const reminderBefore = document.getElementById('reminderBefore');
+    const morningTime = document.getElementById('morningTime');
+    const afternoonTime = document.getElementById('afternoonTime');
+    const eveningTime = document.getElementById('eveningTime');
+    const snoozeDuration = document.getElementById('snoozeDuration');
+    const testNotificationBtn = document.getElementById('testNotification');
+    
+    // Initialize form with current preferences
+    if (notifEnable) notifEnable.checked = prefs.notifications.enabled !== false;
+    if (notifSound) notifSound.checked = prefs.notifications.sound !== false;
+    if (reminderBefore) reminderBefore.value = prefs.notifications.reminderBefore || 15;
+    if (morningTime) morningTime.value = prefs.notifications.morningTime || '08:00';
+    if (afternoonTime) afternoonTime.value = prefs.notifications.afternoonTime || '13:00';
+    if (eveningTime) eveningTime.value = prefs.notifications.eveningTime || '20:00';
+    if (snoozeDuration) snoozeDuration.value = prefs.notifications.snoozeDuration || 5;
+    
+    // Save notification preferences
+    function saveNotificationPrefs() {
+      prefs.notifications = {
+        enabled: notifEnable?.checked !== false,
+        sound: notifSound?.checked !== false,
+        reminderBefore: parseInt(reminderBefore?.value || 15, 10),
+        morningTime: morningTime?.value || '08:00',
+        afternoonTime: afternoonTime?.value || '13:00',
+        eveningTime: eveningTime?.value || '20:00',
+        snoozeDuration: parseInt(snoozeDuration?.value || 5, 10)
+      };
+      persistPrefs();
+      
+      // Reschedule reminders with new settings
+      scheduleMedicationReminders();
+      
+      // Show confirmation
+      toast('Notification settings saved');
+    }
+    
+    // Add event listeners
+    const notificationInputs = [notifEnable, notifSound, reminderBefore, morningTime, 
+                              afternoonTime, eveningTime, snoozeDuration];
+    
+    notificationInputs.forEach(input => {
+      if (input) {
+        input.addEventListener('change', saveNotificationPrefs);
+      }
+    });
+    
+    // Test notification button
+    if (testNotificationBtn) {
+      testNotificationBtn.addEventListener('click', () => {
+        requestNotificationPermission().then(hasPermission => {
+          if (hasPermission) {
+            const testMed = {
+              id: 'test',
+              name: 'Test Medication',
+              dosage: '1 pill',
+              times: [new Date().toTimeString().substr(0, 5)]
+            };
+            showMedicationReminder(testMed, new Date());
+          } else {
+            toast('Please enable notifications in your browser settings');
+          }
+        });
+      });
+    }
     function saveNotif(){ prefs.notifications = { enabled: !!notifEnable.checked, lead: notifLead.value }; persistPrefs(); }
     notifEnable?.addEventListener('change', saveNotif);
     notifLead?.addEventListener('change', saveNotif);
@@ -791,5 +1028,30 @@
 
   // --- Boot ---
   $('#year')?.append(new Date().getFullYear());
-  document.addEventListener('DOMContentLoaded', routeRefresh);
+  
+  // Request notification permission on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    routeRefresh();
+    
+    // Initialize notifications if enabled
+    if (prefs.notifications?.enabled !== false) {
+      requestNotificationPermission().then(() => {
+        scheduleMedicationReminders();
+      });
+    }
+    
+    // Reschedule reminders when the page becomes visible again
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && prefs.notifications?.enabled) {
+        scheduleMedicationReminders();
+      }
+    });
+  });
+  
+  // Schedule reminders when the window regains focus
+  window.addEventListener('focus', () => {
+    if (prefs.notifications?.enabled) {
+      scheduleMedicationReminders();
+    }
+  });
 })();
