@@ -1,10 +1,9 @@
 <?php include __DIR__.'/includes/header.php'; ?>
 <section class="card page-header">
   <div class="row" style="align-items:center; justify-content:space-between">
-    <h2 id="formTitle" class="no-margin">Add Medication</h2>
-    <div id="patientInfo" class="patient-info">
-      <i class="bi bi-person-fill"></i>
-      <span id="patientName">Loading patient...</span>
+    <div class="row" style="align-items:center; gap: 1rem;">
+      <h2 id="formTitle" class="no-margin">Add Medication</h2>
+      <span id="patientBadge" class="status upcoming" aria-live="polite"></span>
     </div>
   </div>
   <form id="medForm" class="grid" novalidate>
@@ -47,31 +46,58 @@
       <a class="btn btn-ghost" href="medication_list.php">Cancel</a>
     </div>
   </form>
+  
+  <style>
+    .patient-display {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0;
+      color: var(--text-color);
+      font-weight: 500;
+    }
+    
+    .patient-display i {
+      font-size: 1.25rem;
+      color: var(--primary-color);
+    }
+    
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+    
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+    
+    .label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+  </style>
 </section>
 <script>
   document.body.setAttribute('data-page','add');
   
-  // Display current patient information
-  function updatePatientInfo() {
-    const pts = JSON.parse(localStorage.getItem('meditrack:patients') || '[]');
+  // Update patient badge
+  const badge = document.getElementById('patientBadge');
+  if(badge) {
     const prefs = JSON.parse(localStorage.getItem('meditrack:prefs') || '{}');
-    let patientName = 'Unknown Patient';
+    const patients = JSON.parse(localStorage.getItem('meditrack:patients') || '[]');
+    let label = 'Patient';
     
     if (prefs.activePatientId) {
-      const patient = pts.find(p => p.id === prefs.activePatientId);
-      if (patient) {
-        patientName = patient.name;
-      }
+      const patient = patients.find(p => p.id === prefs.activePatientId);
+      if (patient) label = patient.name;
     } else {
-      patientName = prefs.activePatient === 'patientB' ? 'Patient B' : 'Patient A';
+      label = prefs.activePatient === 'patientB' ? 'Patient B' : 'Patient A';
     }
     
-    document.getElementById('patientName').textContent = patientName;
+    badge.textContent = `Active: ${label}`;
   }
-  
-  // Update patient info on page load
-  updatePatientInfo();
-  
+
   // Check if we're editing an existing medication
   document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
