@@ -1009,18 +1009,66 @@ function renderHome(){
       form.p_phone.value = profile.phone || '';
       form.p_org.value = profile.org || '';
       form.p_exp.value = profile.experience || '';
+      
+      // Add validation feedback
+      form.p_name.addEventListener('input', () => clearFieldError(form.p_name));
+      form.p_email.addEventListener('input', () => clearFieldError(form.p_email));
+      
       form.onsubmit = (e)=>{
         e.preventDefault();
+        clearFormErrors(form);
+        
+        // Validate form
+        let isValid = true;
+        const name = form.p_name.value.trim();
+        const email = form.p_email.value.trim();
+        const phone = form.p_phone.value.trim();
+        const org = form.p_org.value.trim();
+        const experience = form.p_exp.value.trim();
+        
+        // Name validation
+        if (!name) {
+          setFieldError(form.p_name, 'Name is required');
+          isValid = false;
+        }
+        
+        // Email validation
+        if (!email) {
+          setFieldError(form.p_email, 'Email is required');
+          isValid = false;
+        } else if (!validateEmailFormat(email)) {
+          setFieldError(form.p_email, 'Please enter a valid email address');
+          isValid = false;
+        }
+        
+        // Phone validation (if provided)
+        if (phone && !/^[0-9\-\+\(\)\s]+$/.test(phone)) {
+          setFieldError(form.p_phone, 'Please enter a valid phone number');
+          isValid = false;
+        }
+        
+        // Experience validation (if provided)
+        if (experience && isNaN(experience)) {
+          setFieldError(form.p_exp, 'Please enter a valid number');
+          isValid = false;
+        }
+        
+        if (!isValid) {
+          toast('Please fix the errors in the form', 'error');
+          return;
+        }
+        
         const next = {
-          name: form.p_name.value.trim(),
-          email: form.p_email.value.trim(),
-          phone: form.p_phone.value.trim(),
-          org: form.p_org.value.trim(),
-          experience: form.p_exp.value.trim(),
+          name,
+          email,
+          phone,
+          org,
+          experience,
           updatedAt: new Date().toISOString()
         };
+        
         save(CAREGIVER_PROFILE, next);
-        toast('Profile saved');
+        toast('Profile saved successfully!', 'success');
       };
     }
     const logoutBtnProfile = document.getElementById('logoutBtnProfile');
