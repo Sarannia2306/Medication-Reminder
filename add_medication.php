@@ -151,6 +151,10 @@
       form.addEventListener('submit', function(e) {
         e.preventDefault();
         
+        // Get active patient ID
+        const prefs = JSON.parse(localStorage.getItem('meditrack:prefs') || '{}');
+        const activePatientId = prefs.activePatientId || null;
+        
         // Get form data
         const formData = {
           id: document.getElementById('medId').value || crypto?.randomUUID?.() || 'id-' + Math.random().toString(36).slice(2),
@@ -159,6 +163,7 @@
           time: document.getElementById('time').value,
           frequency: document.getElementById('frequency').value,
           meal: document.getElementById('meal').value,
+          patientId: activePatientId, // Add patient ID to medication
           times: [],
           history: []
         };

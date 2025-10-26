@@ -673,7 +673,17 @@
     { id, name, dosage, times:["HH:MM", ...], meal:"Before Meal|After Meal|With Meal", frequency:"Once Daily|Twice Daily|Thrice Daily|Every Night", history: [{date:"YYYY-MM-DD", time:"HH:MM", status:"taken|missed"}] }
   */
 
-  function addMedication(m){ meds.push({ ...m, id: uuid(), history: m.history || [] }); persist(); }
+  function addMedication(m, patientId = null) { 
+    const prefs = load(PREF_KEY, {});
+    const patient = patientId || prefs.activePatientId || null;
+    meds.push({ 
+      ...m, 
+      id: uuid(), 
+      patientId: patient,
+      history: m.history || [] 
+    }); 
+    persist(); 
+  }
   function updateMedication(id, patch){ meds = meds.map(m => m.id===id ? { ...m, ...patch } : m); persist(); }
   async function deleteMedication(id){
     const ok = await confirmDialog({ title:'Delete Medication', message:'This will remove the medication from your list.', confirmText:'Delete', cancelText:'Cancel' });
@@ -682,17 +692,45 @@
     routeRefresh();
   }
   function markStatus(id, status, timeStr){
-    const m = meds.find(x => x.id===id); if(!m) return;
+    const m = meds.find(x => x.id===id); 
+    if(!m) return;
+    
     const d = new Date();
     const date = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
     let updated = false;
+    
+    // Ensure history array exists
     m.history = [...(m.history||[])];
-    for(let i=m.history.length-1;i>=0;i--){
+    
+    // Find and update existing history entry if it exists
+    for(let i=0; i < m.history.length; i++){
       const h = m.history[i];
-      if(h.date===date && h.time===timeStr){ h.status = status; updated = true; break; }
+      if(h.date === date && h.time === timeStr){ 
+        h.status = status; 
+        updated = true; 
+        break; 
+      }
     }
-    if(!updated){ m.history.push({ date, time: timeStr, status }); }
-    persist(); toast(status==='taken'?'Marked as taken':'Marked as missed');
+    
+    // If no existing entry, add a new one
+    if(!updated){ 
+      m.history.push({ 
+        date, 
+        time: timeStr, 
+        status 
+      }); 
+    }
+    
+    persist(); 
+    
+    // Show appropriate toast message
+    if(status === 'taken') {
+      toast('Marked as taken', 'success');
+    } else if(status === 'missed') {
+      toast('Marked as missed', 'error');
+    }
+    
+    // Refresh the UI
     routeRefresh();
   }
 

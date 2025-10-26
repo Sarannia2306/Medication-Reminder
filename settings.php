@@ -61,8 +61,6 @@
         <label class="label" for="snoozeDuration">Snooze Duration (minutes)</label>
         <input type="number" id="snoozeDuration" class="input" min="1" max="60" value="5">
       </div>
-      
-      <button id="testNotification" class="btn btn-secondary">Test Notification</button>
     </div>
     
     <!-- Medication Reminders -->

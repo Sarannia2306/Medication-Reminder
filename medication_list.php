@@ -46,8 +46,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     badge.textContent = `Active: ${label}`;
   }
-  // Load medications from localStorage
-  const meds = JSON.parse(localStorage.getItem('meditrack:medications') || '[]');
+  // Get active patient
+  const prefs = JSON.parse(localStorage.getItem('meditrack:prefs') || '{}');
+  const activePatientId = prefs.activePatientId || null;
+  
+  // Load medications from localStorage and filter by active patient
+  let allMeds = JSON.parse(localStorage.getItem('meditrack:medications') || '[]');
+  
+  // Filter medications by active patient (if a patient is selected)
+  const meds = activePatientId 
+    ? allMeds.filter(med => med.patientId === activePatientId)
+    : allMeds.filter(med => !med.patientId); // Show medications without patient ID if no patient is selected
+  
   const medList = document.getElementById('medList');
   
   // Handle delete confirmation
@@ -58,7 +68,14 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Function to render the medication list
   function renderMedications() {
-    const meds = JSON.parse(localStorage.getItem('meditrack:medications') || '[]');
+    const allMeds = JSON.parse(localStorage.getItem('meditrack:medications') || '[]');
+    const prefs = JSON.parse(localStorage.getItem('meditrack:prefs') || '{}');
+    const activePatientId = prefs.activePatientId || null;
+    
+    // Filter medications by active patient (if a patient is selected)
+    const meds = activePatientId 
+      ? allMeds.filter(med => med.patientId === activePatientId)
+      : allMeds.filter(med => !med.patientId); // Show medications without patient ID if no patient is selected
     
     if (meds.length === 0) {
       medList.innerHTML = `
@@ -154,6 +171,20 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Initial render
   renderMedications();
+  
+  // Listen for storage changes to update the list when patient changes
+  window.addEventListener('storage', function(e) {
+    if (e.key === 'meditrack:prefs' || e.key === 'meditrack:medications') {
+      renderMedications();
+    }
+  });
+  
+  // Also update when the page becomes visible again (in case changes were made in another tab)
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+      renderMedications();
+    }
+  });
 });
 </script>
 
